@@ -24,6 +24,18 @@ local grafana = ((import 'grafana/grafana.libsonnet') + {
                        configMap.new('grafana-dashboards',
                                      { 'dashboards.yaml': std.manifestJsonEx(sources, '    ') }) +
                        configMap.mixin.metadata.withNamespace($._config.namespace),
+                     deployment+: {
+                       spec+: {
+                         template+: {
+                           spec+: {
+                             containers: [
+                               c { imagePullPolicy+: 'Always' }
+                               for c in super.containers
+                             ],
+                           },
+                         },
+                       },
+                     },
                    },
                  }).grafana;
 
