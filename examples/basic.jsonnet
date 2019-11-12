@@ -6,6 +6,25 @@ local grafana = ((import 'grafana/grafana.libsonnet') + {
                    _config+:: {
                      namespace: 'monitoring-grafana',
                    },
+                   grafana+: {
+                     dashboardSources:
+                       local configMap = k.core.v1.configMap;
+                       local dashboardSources = import 'grafana/configs/dashboard-sources/dashboards.libsonnet';
+                       local sources = dashboardSources
+                                       { providers: dashboardSources.providers +
+                                                    [{
+                                                      name: 'baked',
+                                                      orgId: 1,
+                                                      folder: '',
+                                                      type: 'file',
+                                                      options: {
+                                                        path: '/grafana-dashboard-definitions/baked',
+                                                      },
+                                                    }] };
+                       configMap.new('grafana-dashboards',
+                                     { 'dashboards.yaml': std.manifestJsonEx(sources, '    ') }) +
+                       configMap.mixin.metadata.withNamespace($._config.namespace),
+                   },
                  }).grafana;
 
 k.core.v1.list.new(
